@@ -1,5 +1,0 @@
-INFO: [VRFC 10-163] Analyzing VHDL file "C:/Users/ginka/Desktop/SEM6/FPGA/lab2/lab2.srcs/sources_1/new/my_function.vhd" into library xil_defaultlib
-INFO: [VRFC 10-163] Analyzing VHDL file "C:/Users/ginka/Desktop/SEM6/FPGA/puf_lab2/src/signal_simp.vhd" into library xil_defaultlib
-INFO: [VRFC 10-3107] analyzing entity 'signal_simp'
-INFO: [VRFC 10-163] Analyzing VHDL file "C:/Users/ginka/Desktop/SEM6/FPGA/puf_lab2/tb/signal_simp_tb.vhd" into library xil_defaultlib
-INFO: [VRFC 10-3107] analyzing entity 'SIGNAL_SIMP_TB'

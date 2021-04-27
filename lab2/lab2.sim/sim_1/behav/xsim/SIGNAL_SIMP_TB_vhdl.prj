@@ -1,8 +1,0 @@
-# compile vhdl design source files
-vhdl xil_defaultlib  \
-"../../../../lab2.srcs/sources_1/new/my_function.vhd" \
-"../../../../../puf_lab2/src/signal_simp.vhd" \
-"../../../../../puf_lab2/tb/signal_simp_tb.vhd" \
-
-# Do not sort compile order
-nosort

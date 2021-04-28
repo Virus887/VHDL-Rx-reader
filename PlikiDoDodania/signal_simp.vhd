@@ -107,37 +107,7 @@ begin
              if ((input(1) = XOR_REDUCE(buf)) = N_SLOWO) then
                    error <= '1';					
              end if; 					
-           end if;					
-        when DANA =>						
-           if (time_counter /= T) then			
-             time_counter <= time_counter + 1;			
-           else							
-             buf(buf'left) <= input(1);			
-             buf(buf'left-1 downto 0) <= buf(buf'left downto 1);
-                 time_counter <= 0;					
-             
-             if (buf_counter /= B_SLOWA-1) then			
-               buf_counter <= buf_counter + 1;		
-             else						
-               buf_counter <= 0;			
-               if (B_PARZYSTOSCI = 1) then		
-                 state <= PARZYSTOSC;		
-               else						
-                 state <= STOP;				
-               end if;						
-             end if; 					
-    
-           end if;						
-        when PARZYSTOSC =>				
-            if (time_counter /= T) then				
-             time_counter <= time_counter + 1;				
-            else					
-             time_counter <= 0;				
-             state <= STOP;				
-             if ((input(1) = XOR_REDUCE(buf)) = N_SLOWO) then
-                   error <= '1';					
-             end if; 					
-            end if;					
+           end if;			
 	   
         when STOP =>						
             if (time_counter /= T) then				

@@ -1,12 +1,9 @@
 library ieee;
 use     ieee.std_logic_1164.all;
-use     ieee.std_logic_unsigned.all;
-use     ieee.std_logic_misc.all;
-
 entity SERIAL_RX is
   generic (
     F_ZEGARA		:natural := 20_000_000;	    -- czestotliwosc zegata w [Hz]
-    L_BODOW		    :natural := 9600;			-- predkosc nadawania w [bodach]
+    L_BODOW		    :natural := 5_000_000;			-- predkosc nadawania w [bodach]
     B_SLOWA		    :natural := 8;				-- liczba bitow slowa danych (5-8)
     B_PARZYSTOSCI	:natural := 1;				-- liczba bitow parzystosci (0-1)
     B_STOPOW		:natural := 2;				-- liczba bitow stopu (1-2)
@@ -35,14 +32,14 @@ architecture behavioural of SERIAL_RX is
   
 
   constant T                        :positive := F_ZEGARA/L_BODOW;	    -- czas jednego bodu - liczba taktów zegara
-  signal   time_counter  	        :natural range 0 to T;			    -- licznik czasu jednego bodu
-  signal   buf_counter  	        :natural range 0 to B_SLOWA-1;		-- licznik odebranych bitow danych lub stopu
-  signal   even_counter  	        :natural range 0 to B_SLOWA-1;		-- licznik odebranych 'jedynek' w serii danych
-  signal   stop_counter  	        :natural range 0 to B_STOPOW-1;		-- licznik odczekanych stopów w stanie 'STOP'
+  shared variable   time_counter  	        :natural range 0 to T;			    -- licznik czasu jednego bodu
+  shared variable   buf_counter  	        :natural range 0 to B_SLOWA-1;		-- licznik odebranych bitow danych lub stopu
+  shared variable   even_counter  	        :natural range 0 to B_SLOWA-1;		-- licznik odebranych 'jedynek' w serii danych
+  shared variable   stop_counter  	        :natural range 0 to B_STOPOW-1;		-- licznik odczekanych stopów w stanie 'STOP'
   
  
   signal   buf	    :std_logic_vector(SLOWO'range);		                -- rejestr kolejno odebranych bitow danych
-  signal   error	:std_logic;				                            -- rejestr (flaga) wykrytego bledu odbioru
+  signal   error	:std_logic  := '0';				                    -- rejestr (flaga) wykrytego bledu odbioru
 
 
 begin
@@ -60,10 +57,13 @@ begin
         flag_data := '0';
         flag_even := '0';
         flag_stop := '0';
-        time_counter <= 0;
-        buf_counter <= 0;
-        even_counter <= 0;
-        stop_counter <= 0;
+        time_counter := 0;
+        buf_counter := 0;
+        even_counter := 0;
+        stop_counter := 0;
+        SLOWO <= (others => 'U');
+        GOTOWE <= '0';
+        BLAD <= '0';
         buf <= (others => '0');
         error <= '0';
     
@@ -79,24 +79,27 @@ begin
        R2 <= R1;               ---------------------------------------
                                               
  -----------------------CZEKANIE--------------------------------------
-       if (flag_wait = '1') then	   --
+       if (flag_wait = '1') then	       --
            if (R1 = '1' and R2 = '0') then -- narastaj¹ce zbocze na RX
-                flag_wait := '0';      ---------------------------
+                flag_wait := '0';          ---------------------------
                 flag_start := '1';         -- przechodzimy w stan start
                 flag_data := '0';
                 flag_even := '0';
                 flag_stop := '0';
-                time_counter <= 0;					
-                buf_counter <= 0;					
+                time_counter := 0;					
+                buf_counter := 0;		
+                GOTOWE <= '0';
+                SLOWO <= (others => 'U');
+                BLAD <= '0';			
                 buf <= (others => '0');												
            end if;	
   
 -------------------------START----------------------------------------       				
        elsif (flag_start = '1') then
             if (time_counter /= T/2) then
-                time_counter <= time_counter +1;
+                time_counter := time_counter +1;
             else
-                time_counter <= 0;
+                time_counter := 0;
                 flag_wait := '0';
                 flag_start := '0';
                 flag_data := '1';
@@ -116,27 +119,27 @@ begin
 --------------------------DANA--------------------------------------    
        elsif (flag_data = '1') then
             if(time_counter /= T) then
-                time_counter <= time_counter + 1;
+                time_counter := time_counter + 1;
             else
                 if(N_RX) then                       -----------------
                     buf(buf_counter) <= not(RX);    -- Odczyt danej
                 else                                --
                     buf(buf_counter) <= RX;         --
                 end if;                             -----------------
-                time_counter <= 0;          
+                time_counter := 0;          
                 if(buf_counter /= B_SLOWA-1) then
-                    buf_counter <= buf_counter + 1;         ---------    
+                    buf_counter := buf_counter + 1;         ---------    
                     if(N_RX) then                           -- Zliczanie
                        if (not(RX) = '1') then              -- jedynek
-                          even_counter <= even_counter + 1; -- w 
+                          even_counter := even_counter + 1; -- w 
                        end if;                              -- s³owie
                     else                                    --
                        if (RX = '1') then                   --
-                          even_counter <= even_counter + 1; --
+                          even_counter := even_counter + 1; --
                        end if;                              --------
                     end if;
                 else
-                    buf_counter <= 0;
+                    buf_counter := 0;
                     flag_wait := '0';
                     flag_start := '0';
                     flag_data := '0';
@@ -148,9 +151,9 @@ begin
 -----------------------PARZYSTOŒÆ-----------------------------------
         elsif (flag_even = '1') then
            if (time_counter /= T) then				
-                time_counter <= time_counter + 1;		
+                time_counter := time_counter + 1;		
            else							
-                time_counter <= 0;
+                time_counter := 0;
                 if (B_PARZYSTOSCI = 1) then          --------------
                     if (even_counter mod 2 /= 0) then-- Sprawdzenie
                        error <= '1';				 -- parzystoœci	
@@ -170,12 +173,12 @@ begin
 -------------------------STOP---------------------------------------
         elsif (flag_stop = '1') then					
             if (time_counter /= T) then				
-                 time_counter <= time_counter + 1;			
+                 time_counter := time_counter + 1;			
             else							
-                 time_counter <= 0;	
-                 stop_counter <= stop_counter + 1;				      
+                 time_counter := 0;	
+                 stop_counter := stop_counter + 1;				      
                  if (stop_counter /= B_STOPOW-1) then	
-                    stop_counter <= stop_counter+1;
+                    stop_counter := stop_counter+1;
                     if (N_RX) then
                         if (not(RX) /= '0') then		
                            error <= '1';			
